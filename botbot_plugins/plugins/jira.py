@@ -1,5 +1,6 @@
 import requests
 import json
+import re
 from urlparse import urljoin
 from .. import config
 from ..base import BasePlugin, DummyLine
@@ -36,15 +37,22 @@ class Plugin(BasePlugin):
         if line.user != self.config['bot_name']:
             api_url = urljoin(self.config['jira_url'], self.config['rest_api_suffix'])
             projects = json.loads(self.retrieve('projects'))
+
             if project.upper() in projects:
-                issue_url = urljoin(api_url,"issue/{}-{}".format(project.upper(),issue))
+                issue_url = urljoin(api_url,"issue/{}-{}".format(project.upper(), issue))
                 response = requests.get(issue_url)
+
                 if response.status_code == 200:
                     response_text = json.loads(response.text)
                     name = response_text['key']
                     desc = response_text['fields']['summary']
+
+                    # Only post URL if issue isn't already mentioned as part of one
+                    if re.search(ur'(http)(\S*)/({})\b'.format(name), line.text):
+                        return "{}: {}".format(name, desc)
+
                     return_url = urljoin(self.config['jira_url'], "browse/{}".format(name))
-                    return "{}: {}\n{}".format(name, desc, return_url)
+                    return "{}: {} {}".format(name, desc, return_url)
 
     @listens_to_mentions(ur'(.*)\bUPDATE:JIRA')
     def update_projects(self, line):
@@ -58,8 +66,10 @@ class Plugin(BasePlugin):
         api_url = urljoin(self.config['jira_url'], self.config['rest_api_suffix'])
         project_url = urljoin(api_url, 'project')
         response = requests.get(project_url)
+
         if response.status_code == 200:
             projects = [project['key'] for project in json.loads(response.text)]
             self.store('projects', json.dumps(projects))
             return "Successfully updated projects list"
+
         return "Could not update projects list"
