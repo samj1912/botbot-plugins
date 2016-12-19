@@ -43,8 +43,6 @@ class Plugin(BasePlugin):
                 desc = response_text['fields']['summary']
                 return_url = urljoin(self.config['jira_url'],"projects/{}/issues/{}".format(project,name))
                 return "{}: {}\n{}".format(name,desc,return_url)
-            else:
-                return "Th' servers be not reachable matey, give a go' again later" 
 
     @listens_to_mentions(ur'(.*)\bUPDATE:JIRA')
     def update_projects(self, line):
