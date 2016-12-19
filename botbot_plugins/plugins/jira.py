@@ -20,6 +20,13 @@ class Plugin(BasePlugin):
         jira:{{projectname}}-{{issuenumber}}
     """
     config_class = Config
+    
+    def __init__(self, *args, **kwargs):
+        """Initializes plugin and fetches projects list""
+        
+        super(Plugin, self).__init__(self, *args, **kwargs)
+        update_projects(self, None)
+        
 
     @listens_to_all(ur'(?:.*)\b(?P<project>\w+)-(?P<issue>\d+)\b(?:.*)')
     def issue_lookup(self, line, project, issue):
