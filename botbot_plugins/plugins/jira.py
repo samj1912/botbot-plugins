@@ -62,5 +62,3 @@ class Plugin(BasePlugin):
             self.store('projects', json.dumps(projects))
             return "Successfully updated projects list"
         return "Could not update projects list"
-
-
