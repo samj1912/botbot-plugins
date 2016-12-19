@@ -8,7 +8,7 @@ from ..decorators import listens_to_all, listens_to_mentions
 
 
 class Config(config.BaseConfig):
-    jira_link = config.Field(help_text="Jira Link, eg: 'https://tickets.metabrainz.org'", default="https://tickets.metabrainz.org")
+    jira_link = config.Field(help_text="Jira Link, eg: 'https://tickets.metabrainz.org'")
     rest_api_suffix = config.Field(help_text="Suffix for the Jira REST API, eg: 'rest/api/2/project'", default="rest/api/2/project")
 
 class Plugin(BasePlugin):
@@ -62,8 +62,4 @@ class Plugin(BasePlugin):
             projects = [project['key'] for project in json.loads(response.text)]
             self.store('projects', json.dumps(projects))
             return "Successfully updated projects list"
-        return "Could not update projects list"        
-
-
-
-                
+        return "Could not update projects list"
