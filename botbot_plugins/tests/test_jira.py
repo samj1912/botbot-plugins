@@ -39,4 +39,4 @@ def test_jira(app):
         responses = app.respond("I just assigned TEST-123 to testuser")
         mock_get.assert_called_with(
             'https://tickets.test.org/rest/api/2/issue/TEST-123')
-        assert responses == ["TEST-123: Testing JIRA plugin\nhttps://tickets.test.org/projects/TEST/issues/TEST-123"]
+        assert responses == ["TEST-123: Testing JIRA plugin\nhttps://tickets.test.org/browse/TEST-123"]
