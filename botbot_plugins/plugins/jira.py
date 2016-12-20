@@ -87,7 +87,9 @@ class Plugin(BasePlugin):
         return "Could not update projects list"
 
     def _get_ignored_bots(self):
-
-        ignored_bots = self.config['ignored_bots'].split(",")
+        try:
+            ignored_bots = self.config['ignored_bots'].split(",")
+        except AttributeError:
+            ignored_bots = []
         ignored_bots = [bot.strip() for bot in ignored_bots]
         return ignored_bots
