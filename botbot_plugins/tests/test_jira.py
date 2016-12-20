@@ -10,10 +10,15 @@ class FakeProjectResponse(object):
     status_code = 200
     text = json.dumps([{'key': 'TEST'}])    
 
-class FakeUserResponse(object):
+class FakeUserResponse1(object):
     """Dummy response from JIRA"""
     status_code = 200
     text = json.dumps({'key': 'TEST-123', 'fields': {'summary': "Testing JIRA plugin"}})    
+
+class FakeUserResponse2(object):
+    """Dummy response from JIRA"""
+    status_code = 200
+    text = json.dumps({'key': 'TEST-234', 'fields': {'summary': "Testing JIRA plugin"}})    
 
 @pytest.fixture
 def app():
@@ -35,8 +40,18 @@ def test_jira(app):
 
     # Test appropriate response       
     with patch.object(requests, 'get') as mock_get:
-        mock_get.return_value = FakeUserResponse()
+        mock_get.return_value = FakeUserResponse1()
         responses = app.respond("I just assigned TEST-123 to testuser")
         mock_get.assert_called_with(
             'https://tickets.test.org/rest/api/2/issue/TEST-123')
-        assert responses == ["TEST-123: Testing JIRA plugin\nhttps://tickets.test.org/projects/TEST/issues/TEST-123"]
+        assert responses == ["TEST-123: Testing JIRA plugin https://tickets.test.org/browse/TEST-123"]
+
+    # Test response when issue is mentioned as part of url
+    with patch.object(requests, 'get') as mock_get:
+        mock_get.return_value = FakeUserResponse1()
+        responses = app.respond("Check out https://tickets.test.org/browse/TEST-123")
+        mock_get.assert_called_with(
+            'https://tickets.test.org/rest/api/2/issue/TEST-123')
+        assert responses == ["TEST-123: Testing JIRA plugin"]
+
+
