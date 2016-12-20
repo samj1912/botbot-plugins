@@ -40,8 +40,8 @@ class Plugin(BasePlugin):
             api_url = urljoin(self.config['jira_url'], self.config['rest_api_suffix'])
             projects = json.loads(self.retrieve('projects'))
 
-            if project.upper() in projects:
-                issue_url = urljoin(api_url, "issue/{}-{}".format(project.upper(), issue))
+            if project in projects:
+                issue_url = urljoin(api_url, "issue/{}-{}".format(project, issue))
                 response = requests.get(issue_url)
 
                 if response.status_code == 200:
