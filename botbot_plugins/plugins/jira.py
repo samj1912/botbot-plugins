@@ -3,15 +3,16 @@ import json
 import re
 from urlparse import urljoin
 from .. import config
-from ..base import BasePlugin, DummyLine
+from ..base import BasePlugin
 from ..decorators import listens_to_all, listens_to_mentions
 
 
-
 class Config(config.BaseConfig):
+
     jira_url = config.Field(help_text="JIRA Link, eg: 'https://tickets.metabrainz.org'")
     rest_api_suffix = config.Field(help_text="Suffix for the JIRA REST API, eg: 'rest/api/2/project'", default="rest/api/2/project")
-    bot_name = config.Field(help_text="Name of your bot, eg: BrainzBot")
+    ignored_bots = config.Field(help_text="comma seperated names of your own bot and other bots you want to ignore, eg: BrainzBot, github")
+
 
 class Plugin(BasePlugin):
     """
@@ -21,8 +22,9 @@ class Plugin(BasePlugin):
 
         jira:{{projectname}}-{{issuenumber}}
     """
+
     config_class = Config
-    
+
     @listens_to_all(ur'(?:.*)\b(?P<project>\w+)-(?P<issue>\d+)\b(?:.*)')
     def issue_lookup(self, line, project, issue):
         """
@@ -34,12 +36,12 @@ class Plugin(BasePlugin):
                 Can you please checkup on PROJECT-123
         """
 
-        if line.user != self.config['bot_name']:
+        if line.user not in self._get_ignored_bots():
             api_url = urljoin(self.config['jira_url'], self.config['rest_api_suffix'])
             projects = json.loads(self.retrieve('projects'))
 
             if project.upper() in projects:
-                issue_url = urljoin(api_url,"issue/{}-{}".format(project.upper(), issue))
+                issue_url = urljoin(api_url, "issue/{}-{}".format(project.upper(), issue))
                 response = requests.get(issue_url)
 
                 if response.status_code == 200:
@@ -63,6 +65,7 @@ class Plugin(BasePlugin):
             Ping the bot with the command:
             UPDATE:JIRA
         """
+
         api_url = urljoin(self.config['jira_url'], self.config['rest_api_suffix'])
         project_url = urljoin(api_url, 'project')
         response = requests.get(project_url)
@@ -73,3 +76,9 @@ class Plugin(BasePlugin):
             return "Successfully updated projects list"
 
         return "Could not update projects list"
+
+    def _get_ignored_bots(self):
+
+        ignored_bots = self.config['ignored_bots'].split(",")
+        ignored_bots = [bot.strip() for bot in ignored_bots]
+        return ignored_bots
