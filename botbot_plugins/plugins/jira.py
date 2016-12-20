@@ -60,7 +60,10 @@ class Plugin(BasePlugin):
                             return_url = urljoin(self.config['jira_url'], "browse/{}".format(name))
                             reply.append("{}: {} {}".format(name, desc, return_url))
 
-            return "\n".join(reply)
+            if line.text.lower().startswith("[off]"):
+                return "[off] {}".format("\n[off] ".join(reply))
+            else:
+                return "\n".join(reply)
 
     @listens_to_mentions(ur'(.*)\bUPDATE:JIRA')
     def update_projects(self, line):
