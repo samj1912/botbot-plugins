@@ -25,8 +25,8 @@ class Plugin(BasePlugin):
 
     config_class = Config
 
-    @listens_to_all(ur'(?:.*)\b(?P<project>\w+)-(?P<issue>\d+)\b(?:.*)')
-    def issue_lookup(self, line, project, issue):
+    @listens_to_all(ur'(?:.*)\b([A-Z]+-\d+)\b(?:.*)')
+    def issue_lookup(self, line):
         """
         Lookup a specified JIRA issue
 
@@ -35,26 +35,32 @@ class Plugin(BasePlugin):
             Eg:
                 Can you please checkup on PROJECT-123
         """
-
         if line.user not in self._get_ignored_bots():
             api_url = urljoin(self.config['jira_url'], self.config['rest_api_suffix'])
             projects = json.loads(self.retrieve('projects'))
 
-            if project in projects:
-                issue_url = urljoin(api_url, "issue/{}-{}".format(project, issue))
-                response = requests.get(issue_url)
+            queries = re.findall(r"[A-Z]+-\d+", line.text)
+            queries = [query.split("-") for query in queries]
+            reply = []
 
-                if response.status_code == 200:
-                    response_text = json.loads(response.text)
-                    name = response_text['key']
-                    desc = response_text['fields']['summary']
+            for query in queries:
+                if query[0] in projects:
+                    issue_url = urljoin(api_url, "issue/{}-{}".format(query[0], query[1]))
+                    response = requests.get(issue_url)
 
-                    # Only post URL if issue isn't already mentioned as part of one
-                    if re.search(ur'(http)(\S*)/({})\b'.format(name), line.text):
-                        return "{}: {}".format(name, desc)
+                    if response.status_code == 200:
+                        response_text = json.loads(response.text)
+                        name = response_text['key']
+                        desc = response_text['fields']['summary']
 
-                    return_url = urljoin(self.config['jira_url'], "browse/{}".format(name))
-                    return "{}: {} {}".format(name, desc, return_url)
+                        # Only post URL if issue isn't already mentioned as part of one
+                        if re.search(ur'(http)(\S*)/({})\b'.format(name), line.text):
+                            reply.append("{}: {}".format(name, desc))
+                        else:
+                            return_url = urljoin(self.config['jira_url'], "browse/{}".format(name))
+                            reply.append("{}: {} {}".format(name, desc, return_url))
+
+            return "\n".join(reply)
 
     @listens_to_mentions(ur'(.*)\bUPDATE:JIRA')
     def update_projects(self, line):
