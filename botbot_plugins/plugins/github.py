@@ -1,7 +1,7 @@
 import requests
 from ..base import BasePlugin
 from .. import config
-from ..decorators import listens_to_all
+from ..decorators import listens_to_all, listens_to_mentions
 
 
 class Config(config.BaseConfig):
@@ -30,45 +30,31 @@ class Plugin(BasePlugin):
     url = "https://api.github.com/repos"
     config_class = Config
 
-    @listens_to_all(ur'(?:.*)\b(?:GH|gh):(?P<repo>[\w\-\_]+)#?(?P<issues>\d+(?:,\d+)*)\b(?:.*)')
-    def issue_lookup(self, line, repo, issues):
-        """Lookup an specified repo issue"""
-        # issues can be a list of issue separated by a comma
-        issue_list = [i.strip() for i in issues.split(",")]
-        response_list = []
-        for issue in issue_list[:5]:
-            api_url = "/".join([self.url, self.config['organization'],
-                                repo, "issues", issue])
-            response = requests.get(api_url, auth=self._get_auth())
-            if response.status_code == 200:
-                resp = u'{title}: {html_url}'.format(**response.json())
-                response_list.append(resp)
-            else:
-                resp = u"Sorry I couldn't find issue #{0} in {1}/{2}".format(
-                    issue, self.config['organization'], repo)
-                response_list.append(resp)
+    @listens_to_mentions(ur'(?:.*)\b(?:GH|gh):(?P<abbreviation>[\w\-\_]+)=(?P<repo>[\w\-\_]+)')
+    def store_abbreviation(self, line, abbreviation, repo):
+        """Store an abbreviation for future PR lookups"""
+        self.store(abbreviation, repo)
+        return "Successfully stored the repo {} as {} for Github lookups".format(repo, abbreviation)
 
-        return ", ".join(response_list)
-
-
-    @listens_to_all(ur'(?:.*)\b(?:GH|gh)#?(?P<issues>\d+(?:,\d+)*)\b(?:.*)')
-    def project_issue_lookup(self, line, issues):
-        """Lookup an issue for the default repo"""
-        if not (self.config['organization'] and self.config['repo']):
+    @listens_to_all(ur'(?:.*)\b(?:GH|gh):(?P<repo_abbreviation>[\w\-\_]+)#?(?P<pulls>\d+(?:,\d+)*)\b(?:.*)')
+    def issue_lookup(self, line, repo_abbreviation, pulls):
+        """Lookup an specified repo pulls"""
+        # pulls can be a list of pulls separated by a comma
+        pull_list = [i.strip() for i in pulls.split(",")]
+        repo = self.retrieve(repo_abbreviation)
+        if not repo:
             return
-        # issues can be a list of issue separated by a comma
-        issue_list = [i.strip() for i in issues.split(",")]
         response_list = []
-        for issue in issue_list[:5]:
+        for pull in pull_list[:5]:
             api_url = "/".join([self.url, self.config['organization'],
-                                self.config['repo'], "issues", issue])
+                                repo, "pulls", pull])
             response = requests.get(api_url, auth=self._get_auth())
             if response.status_code == 200:
                 resp = u'{title}: {html_url}'.format(**response.json())
                 response_list.append(resp)
             else:
-                resp = u"Sorry I couldn't find issue #{0} in {1}/{2}".format(
-                    issue, self.config['organization'], self.config['repo'])
+                resp = u"Sorry I couldn't find pull #{0} in {1}/{2}".format(
+                    pull, self.config['organization'], repo)
                 response_list.append(resp)
 
         return ", ".join(response_list)
