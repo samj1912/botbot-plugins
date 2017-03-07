@@ -18,12 +18,17 @@ class Config(config.BaseConfig):
 
 class Plugin(BasePlugin):
     """
-    Github issue lookup
+    Github pull lookup
 
-    Looking for the url of an issue or a list of issue:
+    Looking for the url of an pull or a list of pulls:
 
-        gh#<issue_number>
-        gh#<comma_separated_issue_numbers>
+    To store an abbreviation for a repo use
+
+    @gh:abbreviation:repo_name
+
+    To retrieve a PR simply use:
+
+    gh:abbreviation#PR_number
 
     Note: The lookup is limited to 5 issues.
     """
